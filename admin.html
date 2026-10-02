@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo Café — Dedicated Admin Operations Dashboard</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS via allowlisted script -->
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: {
+              700: '#254d38',
+              800: '#1B3B2B',
+              900: '#12281D',
+              950: '#0B1A13'
+            },
+            ivory: {
+              50: '#FCFAF6',
+              100: '#F7F3EB',
+              200: '#EDE5D8',
+              300: '#E0D4C1'
+            },
+            terracotta: {
+              400: '#E26E45',
+              500: '#C85A32',
+              600: '#B04823',
+              700: '#8E3819'
+            },
+            peach: {
+              50: '#FEFAF7',
+              100: '#F9ECE3',
+              200: '#F3D9C7'
+            },
+            sage: {
+              200: '#C8D6C5',
+              300: '#ADC2A9',
+              400: '#8FA38B',
+              500: '#6E8569'
+            }
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F7F3EB;
+      color: #12281D;
+    }
+    .font-serif {
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+    .admin-tab-active {
+      background-color: #C85A32 !important;
+      color: #ffffff !important;
+    }
+    .modal-backdrop {
+      background: rgba(11, 26, 19, 0.75);
+      backdrop-filter: blur(8px);
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F7F3EB;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #8FA38B;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #C85A32;
+    }
+  </style>
+</head>
+<body class="bg-ivory-100 min-h-screen selection:bg-terracotta-500 selection:text-white flex flex-col">
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+  <!-- ADMIN TOP HEADER BAR -->
+  <header class="bg-forest-950 text-ivory-50 border-b border-forest-800 sticky top-0 z-40 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- Logo / Backoffice Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-terracotta-500 text-white flex items-center justify-center font-bold text-base shadow">
+          ⚙️
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-serif text-xl font-bold tracking-tight text-ivory-50">Demo Café Operations</span>
+            <span class="bg-sage-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Dedicated Admin</span>
+          </div>
+          <span class="text-[11px] text-sage-300">Pure HTML/JS • Real-time synchronization</span>
+        </div>
+      </div>
+
+      <!-- Action: Link back to main website -->
+      <div class="flex items-center gap-4">
+        <a href="index.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-forest-800 hover:bg-forest-700 text-ivory-100 text-xs font-semibold border border-sage-400/30 transition-all shadow-sm">
+          <span>🌐 View Live Website</span>
+          <svg class="w-3.5 h-3.5 text-terracotta-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        </a>
+        <button onclick="resetFactoryData()" class="text-xs text-sage-300 hover:text-terracotta-400 underline hidden sm:inline">
+          Reset Demo Store
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Admin Tab Switcher -->
+    <div class="bg-forest-900 border-t border-forest-800/80 px-4 sm:px-8">
+      <div class="max-w-7xl mx-auto flex items-center gap-2 py-2 overflow-x-auto text-xs">
+        <button onclick="switchTab('menu')" id="tab-menu" class="admin-tab-active px-4 py-2 rounded-xl font-semibold text-ivory-100 hover:bg-forest-800 transition-all flex items-center gap-1.5 flex-shrink-0">
+          <span>📋</span> Menu Catalog (<span id="statMenuCount">0</span>)
+        </button>
+        <button onclick="switchTab('orders')" id="tab-orders" class="px-4 py-2 rounded-xl font-semibold text-ivory-100 hover:bg-forest-800 transition-all flex items-center gap-1.5 flex-shrink-0">
+          <span>🛍️</span> Live Orders (<span id="statOrdersCount">0</span>)
+        </button>
+        <button onclick="switchTab('reservations')" id="tab-reservations" class="px-4 py-2 rounded-xl font-semibold text-ivory-100 hover:bg-forest-800 transition-all flex items-center gap-1.5 flex-shrink-0">
+          <span>📅</span> Table Bookings (<span id="statResCount">0</span>)
+        </button>
+        <button onclick="switchTab('reviews')" id="tab-reviews" class="px-4 py-2 rounded-xl font-semibold text-ivory-100 hover:bg-forest-800 transition-all flex items-center gap-1.5 flex-shrink-0">
+          <span>⭐</span> Reviews (<span id="statReviewsCount">0</span>)
+        </button>
+        <button onclick="switchTab('settings')" id="tab-settings" class="px-4 py-2 rounded-xl font-semibold text-ivory-100 hover:bg-forest-800 transition-all flex items-center gap-1.5 flex-shrink-0">
+          <span>⚙️</span> Store Settings
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN ADMIN CONTENT -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+    
+    <!-- ==================== 1. MENU CATALOG ==================== -->
+    <section id="view-menu" class="space-y-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-ivory-200 shadow-sm">
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-forest-900">Menu Catalog Management</h2>
+          <p class="text-xs text-forest-800/70 mt-1">Publish new single-origin drinks, artisanal pastries, or update live prices.</p>
+        </div>
+        <button onclick="openAddMenuModal()" class="px-5 py-2.5 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 shadow">
+          <span>+ Add Menu Item</span>
+        </button>
+      </div>
+
+      <div class="bg-white rounded-3xl border border-ivory-200 overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-forest-900">
+            <thead class="bg-forest-950 text-ivory-100 text-[11px] uppercase tracking-wider">
+              <tr>
+                <th class="p-4">Item & Description</th>
+                <th class="p-4">Category</th>
+                <th class="p-4">Price</th>
+                <th class="p-4">Badge</th>
+                <th class="p-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="menuTableBody" class="divide-y divide-ivory-200">
+              <!-- Injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 2. LIVE ORDERS ==================== -->
+    <section id="view-orders" class="space-y-6 hidden">
+      <div class="flex items-center justify-between bg-white p-6 rounded-3xl border border-ivory-200 shadow-sm">
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-forest-900">Live Customer Orders</h2>
+          <p class="text-xs text-forest-800/70 mt-1">Orders placed on the main customer website show up here in real time.</p>
+        </div>
+        <button onclick="simulateOrder()" class="px-4 py-2 rounded-full bg-forest-800 hover:bg-forest-700 text-ivory-50 text-xs font-semibold">
+          + Simulate Customer Ticket
+        </button>
+      </div>
+
+      <div id="ordersContainer" class="space-y-4">
+        <!-- Injected by JS -->
+      </div>
+    </section>
+
+    <!-- ==================== 3. TABLE RESERVATIONS ==================== -->
+    <section id="view-reservations" class="space-y-6 hidden">
+      <div class="flex items-center justify-between bg-white p-6 rounded-3xl border border-ivory-200 shadow-sm">
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-forest-900">Table Bookings & Seating</h2>
+          <p class="text-xs text-forest-800/70 mt-1">Customer bookings received through the live website reservation modal.</p>
+        </div>
+        <button onclick="simulateBooking()" class="px-4 py-2 rounded-full bg-forest-800 hover:bg-forest-700 text-ivory-50 text-xs font-semibold">
+          + Add Test Booking
+        </button>
+      </div>
+
+      <div id="reservationsContainer" class="space-y-4">
+        <!-- Injected by JS -->
+      </div>
+    </section>
+
+    <!-- ==================== 4. REVIEWS MODERATION ==================== -->
+    <section id="view-reviews" class="space-y-6 hidden">
+      <div class="bg-white p-6 rounded-3xl border border-ivory-200 shadow-sm">
+        <h2 class="font-serif text-2xl font-bold text-forest-900">Guest Reviews Moderation</h2>
+        <p class="text-xs text-forest-800/70 mt-1">Manage guest feedback and ratings displayed publicly on the website.</p>
+      </div>
+
+      <div id="reviewsContainer" class="space-y-3">
+        <!-- Injected by JS -->
+      </div>
+    </section>
+
+    <!-- ==================== 5. STORE SETTINGS ==================== -->
+    <section id="view-settings" class="space-y-6 hidden">
+      <form onsubmit="handleSaveSettings(event)" class="bg-white p-8 rounded-3xl border border-ivory-200 shadow-sm space-y-6 text-xs max-w-3xl">
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-forest-900 mb-1">Live Store Configuration</h2>
+          <p class="text-forest-800/70">Modify announcements, store names, hours and contact information across the site.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="block font-bold text-forest-900 mb-1.5">Café Brand Name</label>
+            <input type="text" id="settingBrandName" required class="w-full bg-ivory-50 border border-ivory-300 rounded-xl px-4 py-2.5">
+          </div>
+          <div>
+            <label class="block font-bold text-forest-900 mb-1.5">Brand Subtitle / Tagline</label>
+            <input type="text" id="settingTagline" required class="w-full bg-ivory-50 border border-ivory-300 rounded-xl px-4 py-2.5">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-forest-900 mb-1.5">Top Announcement Bar Text</label>
+          <input type="text" id="settingAnnouncement" required class="w-full bg-ivory-50 border border-ivory-300 rounded-xl px-4 py-2.5">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="block font-bold text-forest-900 mb-1.5">Operating Hours</label>
+            <input type="text" id="settingHours" required class="w-full bg-ivory-50 border border-ivory-300 rounded-xl px-4 py-2.5">
+          </div>
+          <div>
+            <label class="block font-bold text-forest-900 mb-1.5">Contact Email & Phone</label>
+            <input type="text" id="settingContact" required class="w-full bg-ivory-50 border border-ivory-300 rounded-xl px-4 py-2.5">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-forest-900 mb-1.5">Physical Address</label>
+          <input type="text" id="settingAddress" required class="w-full bg-ivory-50 border border-ivory-300 rounded-xl px-4 py-2.5">
+        </div>
+
+        <button type="submit" class="px-7 py-3.5 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-semibold text-xs shadow-md">
+          Save & Publish to Main Website
+        </button>
+      </form>
+    </section>
+
+  </main>
+
+  <!-- ==================== ADD / EDIT MENU MODAL ==================== -->
+  <div id="menuEditModal" class="fixed inset-0 z-50 modal-backdrop opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-4">
+    <div class="bg-ivory-50 rounded-3xl shadow-2xl max-w-lg w-full p-6 border border-ivory-300 text-xs">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-ivory-200">
+        <h3 id="menuEditModalTitle" class="font-serif text-xl font-bold text-forest-900">Add Menu Item</h3>
+        <button onclick="closeMenuEditModal()" class="text-forest-800 p-2 text-lg">✕</button>
+      </div>
+      <form onsubmit="handleSaveMenuItem(event)" class="space-y-3">
+        <input type="hidden" id="editItemId" value="">
+        <div>
+          <label class="block font-bold text-forest-900 mb-1">Item Title</label>
+          <input type="text" id="editItemTitle" required placeholder="e.g., Lavender Honey Cold Foam" class="w-full bg-ivory-100 border border-ivory-300 rounded-xl px-3 py-2">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-forest-900 mb-1">Category</label>
+            <select id="editItemCategory" required class="w-full bg-ivory-100 border border-ivory-300 rounded-xl px-3 py-2">
+              <option value="coffee">Signature Coffee</option>
+              <option value="bakery">Artisan Bakery</option>
+              <option value="tea">Botanical Teas</option>
+              <option value="brunch">Seasonal Bites</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-forest-900 mb-1">Price (\$ USD)</label>
+            <input type="number" step="0.05" id="editItemPrice" required placeholder="5.50" class="w-full bg-ivory-100 border border-ivory-300 rounded-xl px-3 py-2">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-forest-900 mb-1">Badge Tag</label>
+            <input type="text" id="editItemTag" placeholder="e.g. Seasonal / Chef's Pick" class="w-full bg-ivory-100 border border-ivory-300 rounded-xl px-3 py-2">
+          </div>
+          <div>
+            <label class="block font-bold text-forest-900 mb-1">Card Background Style</label>
+            <select id="editItemBg" class="w-full bg-ivory-100 border border-ivory-300 rounded-xl px-3 py-2">
+              <option value="ivory">Warm Ivory Card</option>
+              <option value="peach">Soft Peach Card</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-forest-900 mb-1">Image URL</label>
+          <input type="url" id="editItemImg" required placeholder="https://images.unsplash.com/photo-..." class="w-full bg-ivory-100 border border-ivory-300 rounded-xl px-3 py-2">
+        </div>
+        <div>
+          <label class="block font-bold text-forest-900 mb-1">Description</label>
+          <textarea id="editItemDesc" required rows="2" placeholder="Describe tasting notes, brew origin..." class="w-full bg-ivory-100 border border-ivory-300 rounded-xl px-3 py-2"></textarea>
+        </div>
+        <div class="pt-3 flex gap-3">
+          <button type="submit" class="flex-1 py-3 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-semibold">
+            Save Item
+          </button>
+          <button type="button" onclick="closeMenuEditModal()" class="px-5 py-3 rounded-full bg-ivory-200 hover:bg-ivory-300 text-forest-900 font-semibold">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT CONTROLLER (Pure JS & LocalStorage Synchronizer) -->
+  <script>
+    const defaultMenu = [
+      {
+        id: 1,
+        title: "Velvet Flat White",
+        category: "coffee",
+        price: 4.75,
+        tag: "Signature",
+        bg: "ivory",
+        desc: "Double ristretto extracted with Ethiopian heirloom beans and silky micro-textured oat milk.",
+        img: "https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        id: 2,
+        title: "Almond Cardamom Croissant",
+        category: "bakery",
+        price: 5.25,
+        tag: "Chef's Pick",
+        bg: "peach",
+        desc: "Twice-baked French flaky pastry filled with house-made almond frangipane & fragrant green cardamom.",
+        img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        id: 3,
+        title: "Ceremonial Matcha Cloud",
+        category: "tea",
+        price: 5.80,
+        tag: "Organic",
+        bg: "ivory",
+        desc: "First-harvest Uji ceremonial matcha whisked with Madagascar vanilla bean and velvety cold foam.",
+        img: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        id: 4,
+        title: "Slow-Drip Single Origin Pour-Over",
+        category: "coffee",
+        price: 6.00,
+        tag: "Micro-Lot",
+        bg: "peach",
+        desc: "Precision V60 brew with notes of wild blueberry, bergamot tea, and milk chocolate finish.",
+        img: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        id: 5,
+        title: "Avocado & Ricotta Sourdough",
+        category: "brunch",
+        price: 8.50,
+        tag: "Fresh Bake",
+        bg: "ivory",
+        desc: "House sourdough toast topped with whipped herb ricotta, hass avocado, lemon zest, and Aleppo chili.",
+        img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        id: 6,
+        title: "Sparkling Botanical Cold Brew",
+        category: "coffee",
+        price: 5.50,
+        tag: "Seasonal",
+        bg: "ivory",
+        desc: "24-hour steep cold brew layered with artisanal tonic water, rosemary sprig, and dehydrated blood orange.",
+        img: "https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=800&q=80"
+      }
+    ];
+
+    const defaultReviews = [
+      {
+        id: 1,
+        author: "Elena Vance",
+        rating: 5,
+        text: "The atmosphere here is pure serenity. Finding a spot with coffee this meticulously crafted and pastries this warm and fresh is a true rare gem.",
+        role: "Demo Community Member"
+      },
+      {
+        id: 2,
+        author: "Marcus Thorne",
+        rating: 5,
+        text: "The cardamom almond croissant paired with their signature pour-over is hands down my favorite weekend morning ritual. The playlist and botanical design are unmatched.",
+        role: "Demo Food Reviewer"
+      },
+      {
+        id: 3,
+        author: "Sophia Hayes",
+        rating: 5,
+        text: "Deep forest greens, soft ambient daylight, and baristas who genuinely care about the origin of every bean. Stepping inside feels grounding.",
+        role: "Local Architect"
+      }
+    ];
+
+    const defaultSettings = {
+      brandName: "Demo Café",
+      tagline: "Specialty Coffee & Bakes",
+      announcement: "Demo Roastery Edition: Single-origin Ethiopian Yirgacheffe freshly harvested",
+      hours: "Mon–Fri: 7am–7pm • Sat–Sun: 8am–8pm",
+      contact: "hello@democafe.example • (555) 019-2834",
+      address: "100 Botanical Garden Way, Demo District"
+    };
+
+    let menuStore = JSON.parse(localStorage.getItem('democafe_menu')) || defaultMenu;
+    let ordersStore = JSON.parse(localStorage.getItem('democafe_orders')) || [
+      {
+        id: "DEMO-739182",
+        time: "10:14 AM",
+        items: [{ title: "Velvet Flat White", qty: 2, price: 4.75 }, { title: "Almond Cardamom Croissant", qty: 1, price: 5.25 }],
+        total: 15.93,
+        status: "Brewing"
+      }
+    ];
+    let reservationsStore = JSON.parse(localStorage.getItem('democafe_reservations')) || [
+      {
+        id: "RES-104",
+        name: "Claire Dupont",
+        phone: "(555) 234-8971",
+        date: "Tomorrow",
+        time: "10:00 AM",
+        guests: "2 People",
+        area: "Botanical Greenhouse",
+        notes: "Window corner requested",
+        status: "Confirmed"
+      }
+    ];
+    let reviewsStore = JSON.parse(localStorage.getItem('democafe_reviews')) || defaultReviews;
+    let settingsStore = JSON.parse(localStorage.getItem('democafe_settings')) || defaultSettings;
+
+    function saveState() {
+      localStorage.setItem('democafe_menu', JSON.stringify(menuStore));
+      localStorage.setItem('democafe_orders', JSON.stringify(ordersStore));
+      localStorage.setItem('democafe_reservations', JSON.stringify(reservationsStore));
+      localStorage.setItem('democafe_reviews', JSON.stringify(reviewsStore));
+      localStorage.setItem('democafe_settings', JSON.stringify(settingsStore));
+    }
+
+    function renderAllViews() {
+      // Counters
+      document.getElementById('statMenuCount').textContent = menuStore.length;
+      document.getElementById('statOrdersCount').textContent = ordersStore.length;
+      document.getElementById('statResCount').textContent = reservationsStore.length;
+      document.getElementById('statReviewsCount').textContent = reviewsStore.length;
+
+      // Menu Table
+      const menuTbody = document.getElementById('menuTableBody');
+      menuTbody.innerHTML = '';
+      menuStore.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-ivory-50 transition-colors";
+        tr.innerHTML = `
+          <td class="p-4 flex items-center gap-3">
+            <img src="${item.img}" class="w-12 h-12 rounded-xl object-cover border border-ivory-300">
+            <div>
+              <span class="font-bold text-forest-900 block text-sm">${item.title}</span>
+              <span class="text-[11px] text-forest-800/60 block max-w-sm">${item.desc}</span>
+            </div>
+          </td>
+          <td class="p-4"><span class="capitalize px-2.5 py-1 rounded-full bg-ivory-200 text-[10px] font-bold">${item.category}</span></td>
+          <td class="p-4 font-bold text-terracotta-500 font-serif text-sm">\$${Number(item.price).toFixed(2)}</td>
+          <td class="p-4"><span class="px-2.5 py-0.5 rounded-full bg-forest-900 text-ivory-100 text-[10px] font-semibold">${item.tag || 'Craft'}</span></td>
+          <td class="p-4 text-right space-x-2">
+            <button onclick="openEditMenuModal(${item.id})" class="px-3 py-1.5 rounded-lg bg-forest-800 hover:bg-forest-700 text-ivory-100 text-xs font-semibold">Edit</button>
+            <button onclick="deleteMenuItem(${item.id})" class="px-3 py-1.5 rounded-lg bg-red-600/90 hover:bg-red-700 text-white text-xs font-semibold">Delete</button>
+          </td>
+        `;
+        menuTbody.appendChild(tr);
+      });
+
+      // Orders
+      const ordersBox = document.getElementById('ordersContainer');
+      ordersBox.innerHTML = '';
+      if (ordersStore.length === 0) {
+        ordersBox.innerHTML = `<div class="p-8 text-center bg-white rounded-3xl border border-ivory-200 text-xs text-forest-800/60">No customer orders in queue. Orders placed in index.html show here.</div>`;
+      } else {
+        ordersStore.forEach((ord, idx) => {
+          const div = document.createElement('div');
+          div.className = "bg-white p-5 rounded-3xl border border-ivory-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
+          const itemsSummary = ord.items.map(i => `${i.qty}x ${i.title}`).join(', ');
+          div.innerHTML = `
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-bold text-sm text-forest-950">${ord.id}</span>
+                <span class="text-[11px] text-forest-800/60">• ${ord.time}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${ord.status === 'Completed' ? 'bg-green-100 text-green-800' : ord.status === 'Brewing' ? 'bg-peach-200 text-terracotta-700' : 'bg-yellow-100 text-yellow-800'}">${ord.status}</span>
+              </div>
+              <p class="text-xs text-forest-900">${itemsSummary}</p>
+              <span class="text-xs font-bold text-terracotta-500 font-serif">Total: \$${Number(ord.total).toFixed(2)}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <select onchange="updateOrderStatus(${idx}, this.value)" class="bg-ivory-100 border border-ivory-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-forest-900">
+                <option value="Pending" ${ord.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                <option value="Brewing" ${ord.status === 'Brewing' ? 'selected' : ''}>Brewing / Prep</option>
+                <option value="Completed" ${ord.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                <option value="Cancelled" ${ord.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+              </select>
+              <button onclick="deleteOrder(${idx})" class="text-red-600 hover:text-red-800 p-2 text-xs font-bold">✕</button>
+            </div>
+          `;
+          ordersBox.appendChild(div);
+        });
+      }
+
+      // Reservations
+      const resBox = document.getElementById('reservationsContainer');
+      resBox.innerHTML = '';
+      if (reservationsStore.length === 0) {
+        resBox.innerHTML = `<div class="p-8 text-center bg-white rounded-3xl border border-ivory-200 text-xs text-forest-800/60">No table bookings scheduled.</div>`;
+      } else {
+        reservationsStore.forEach((r, idx) => {
+          const div = document.createElement('div');
+          div.className = "bg-white p-5 rounded-3xl border border-ivory-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
+          div.innerHTML = `
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-bold text-sm text-forest-950">${r.name}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">${r.status}</span>
+              </div>
+              <p class="text-xs text-forest-900 font-medium">${r.date} @ ${r.time} • ${r.guests} • ${r.area}</p>
+              <span class="text-[11px] text-forest-800/60">Contact: ${r.phone} ${r.notes ? '• Note: ' + r.notes : ''}</span>
+            </div>
+            <button onclick="deleteReservation(${idx})" class="px-4 py-1.5 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold">Cancel Booking</button>
+          `;
+          resBox.appendChild(div);
+        });
+      }
+
+      // Reviews
+      const revBox = document.getElementById('reviewsContainer');
+      revBox.innerHTML = '';
+      reviewsStore.forEach((rv, idx) => {
+        const div = document.createElement('div');
+        div.className = "bg-white p-5 rounded-3xl border border-ivory-200 shadow-sm flex items-center justify-between gap-4";
+        div.innerHTML = `
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs text-forest-900">${rv.author}</span>
+              <span class="text-terracotta-500 text-xs">${'★'.repeat(rv.rating)}</span>
+            </div>
+            <p class="text-xs text-forest-800/80 italic mt-1">“${rv.text}”</p>
+          </div>
+          <button onclick="deleteReview(${idx})" class="text-xs text-red-600 hover:text-red-800 px-3.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 font-semibold">Delete</button>
+        `;
+        revBox.appendChild(div);
+      });
+
+      // Settings Inputs
+      document.getElementById('settingBrandName').value = settingsStore.brandName || '';
+      document.getElementById('settingTagline').value = settingsStore.tagline || '';
+      document.getElementById('settingAnnouncement').value = settingsStore.announcement || '';
+      document.getElementById('settingHours').value = settingsStore.hours || '';
+      document.getElementById('settingContact').value = settingsStore.contact || '';
+      document.getElementById('settingAddress').value = settingsStore.address || '';
+    }
+
+    function switchTab(tabName) {
+      const tabs = ['menu', 'orders', 'reservations', 'reviews', 'settings'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const view = document.getElementById(`view-${t}`);
+        if (t === tabName) {
+          btn.classList.add('admin-tab-active');
+          view.classList.remove('hidden');
+        } else {
+          btn.classList.remove('admin-tab-active');
+          view.classList.add('hidden');
+        }
+      });
+    }
+
+    // Modal Actions
+    function openAddMenuModal() {
+      document.getElementById('menuEditModalTitle').textContent = "Add New Menu Item";
+      document.getElementById('editItemId').value = "";
+      document.getElementById('editItemTitle').value = "";
+      document.getElementById('editItemCategory').value = "coffee";
+      document.getElementById('editItemPrice').value = "";
+      document.getElementById('editItemTag').value = "New Roast";
+      document.getElementById('editItemBg').value = "ivory";
+      document.getElementById('editItemImg').value = "https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=800&q=80";
+      document.getElementById('editItemDesc').value = "";
+      document.getElementById('menuEditModal').classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function openEditMenuModal(id) {
+      const item = menuStore.find(i => i.id === id);
+      if (!item) return;
+      document.getElementById('menuEditModalTitle').textContent = "Edit Menu Item";
+      document.getElementById('editItemId').value = item.id;
+      document.getElementById('editItemTitle').value = item.title;
+      document.getElementById('editItemCategory').value = item.category;
+      document.getElementById('editItemPrice').value = item.price;
+      document.getElementById('editItemTag').value = item.tag || "";
+      document.getElementById('editItemBg').value = item.bg || "ivory";
+      document.getElementById('editItemImg').value = item.img;
+      document.getElementById('editItemDesc').value = item.desc;
+      document.getElementById('menuEditModal').classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function closeMenuEditModal() {
+      document.getElementById('menuEditModal').classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function handleSaveMenuItem(e) {
+      e.preventDefault();
+      const id = document.getElementById('editItemId').value;
+      const title = document.getElementById('editItemTitle').value;
+      const category = document.getElementById('editItemCategory').value;
+      const price = parseFloat(document.getElementById('editItemPrice').value);
+      const tag = document.getElementById('editItemTag').value;
+      const bg = document.getElementById('editItemBg').value;
+      const img = document.getElementById('editItemImg').value;
+      const desc = document.getElementById('editItemDesc').value;
+
+      if (id) {
+        const item = menuStore.find(i => i.id == id);
+        if (item) {
+          item.title = title;
+          item.category = category;
+          item.price = price;
+          item.tag = tag;
+          item.bg = bg;
+          item.img = img;
+          item.desc = desc;
+        }
+        showToast(`Updated "${title}"`, 'success');
+      } else {
+        const newItem = {
+          id: Date.now(),
+          title,
+          category,
+          price,
+          tag,
+          bg,
+          img,
+          desc
+        };
+        menuStore.push(newItem);
+        showToast(`Added new item "${title}"`, 'success');
+      }
+
+      saveState();
+      renderAllViews();
+      closeMenuEditModal();
+    }
+
+    function deleteMenuItem(id) {
+      if (confirm("Delete this menu item?")) {
+        menuStore = menuStore.filter(i => i.id !== id);
+        saveState();
+        renderAllViews();
+        showToast("Menu item deleted", 'info');
+      }
+    }
+
+    function updateOrderStatus(idx, status) {
+      ordersStore[idx].status = status;
+      saveState();
+      renderAllViews();
+      showToast(`Order status set to ${status}`, 'success');
+    }
+
+    function deleteOrder(idx) {
+      ordersStore.splice(idx, 1);
+      saveState();
+      renderAllViews();
+      showToast("Order ticket dismissed", 'info');
+    }
+
+    function deleteReservation(idx) {
+      reservationsStore.splice(idx, 1);
+      saveState();
+      renderAllViews();
+      showToast("Reservation cancelled", 'info');
+    }
+
+    function deleteReview(idx) {
+      reviewsStore.splice(idx, 1);
+      saveState();
+      renderAllViews();
+      showToast("Review deleted", 'info');
+    }
+
+    function handleSaveSettings(e) {
+      e.preventDefault();
+      settingsStore.brandName = document.getElementById('settingBrandName').value;
+      settingsStore.tagline = document.getElementById('settingTagline').value;
+      settingsStore.announcement = document.getElementById('settingAnnouncement').value;
+      settingsStore.hours = document.getElementById('settingHours').value;
+      settingsStore.contact = document.getElementById('settingContact').value;
+      settingsStore.address = document.getElementById('settingAddress').value;
+
+      saveState();
+      renderAllViews();
+      showToast("Store settings published live to main website!", 'success');
+    }
+
+    function simulateOrder() {
+      const demoId = 'DEMO-' + Math.floor(100000 + Math.random() * 900000);
+      ordersStore.unshift({
+        id: demoId,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        items: [{ title: "Ceremonial Matcha Cloud", qty: 1, price: 5.80 }, { title: "Velvet Flat White", qty: 1, price: 4.75 }],
+        total: 11.39,
+        status: "Pending"
+      });
+      saveState();
+      renderAllViews();
+      showToast(`New test order #${demoId} created!`, 'success');
+    }
+
+    function simulateBooking() {
+      const names = ["Julian Foster", "Amira Patel", "Lucas Silva", "Sarah Jenkins"];
+      const randomName = names[Math.floor(Math.random() * names.length)];
+      reservationsStore.unshift({
+        id: "RES-" + Math.floor(100 + Math.random() * 900),
+        name: randomName,
+        phone: "(555) " + Math.floor(100 + Math.random() * 900) + "-4821",
+        date: "This Friday",
+        time: "03:30 PM",
+        guests: "4 People",
+        area: "Sunlit Sunroom Patio",
+        notes: "Team coffee tasting session",
+        status: "Confirmed"
+      });
+      saveState();
+      renderAllViews();
+      showToast(`New booking added for ${randomName}`, 'success');
+    }
+
+    function resetFactoryData() {
+      if (confirm("Reset all store data to factory defaults?")) {
+        localStorage.clear();
+        menuStore = [...defaultMenu];
+        ordersStore = [];
+        reservationsStore = [];
+        reviewsStore = [...defaultReviews];
+        settingsStore = { ...defaultSettings };
+        saveState();
+        renderAllViews();
+        showToast("Reset to factory defaults", 'info');
+      }
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto px-5 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-3 transition-all duration-300 transform translate-y-4 opacity-0 ${
+        type === 'success' ? 'bg-forest-900 text-ivory-50 border border-terracotta-500/50' : 'bg-forest-950 text-ivory-100 border border-sage-400/30'
+      }`;
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${type === 'success' ? 'bg-terracotta-500' : 'bg-sage-300'}"></span>
+        <span>${msg}</span>
+      `;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-4');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Storage event for live synchronization across browser tabs
+    window.addEventListener('storage', (e) => {
+      if (e.key && e.key.startsWith('democafe_')) {
+        menuStore = JSON.parse(localStorage.getItem('democafe_menu')) || defaultMenu;
+        ordersStore = JSON.parse(localStorage.getItem('democafe_orders')) || [];
+        reservationsStore = JSON.parse(localStorage.getItem('democafe_reservations')) || [];
+        reviewsStore = JSON.parse(localStorage.getItem('democafe_reviews')) || defaultReviews;
+        settingsStore = JSON.parse(localStorage.getItem('democafe_settings')) || defaultSettings;
+        renderAllViews();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAllViews();
+    });
+  </script>
+</body>
+</html>
